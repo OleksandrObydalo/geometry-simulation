@@ -44,7 +44,7 @@ const renderer = new CanvasRenderer(document.body, engine, Matter, {
   use3D: true
 });
 
-// Modify the createGeometricBody function to include individual color and opacity controls
+// Modify the createGeometricBody function to ONLY create circles
 function createGeometricBody(x, y) {
   const radius = Math.random() * 60 + 30; 
   const colors = [
@@ -53,16 +53,8 @@ function createGeometricBody(x, y) {
   ];
   const color = colors[Math.floor(Math.random() * colors.length)];
   
-  const geometryTypes = [
-    () => Bodies.circle(x, y, radius),
-    () => Bodies.polygon(x, y, 3, radius),  // Triangle
-    () => Bodies.polygon(x, y, 4, radius),  // Square
-    () => Bodies.polygon(x, y, 5, radius),  // Pentagon
-    () => Bodies.polygon(x, y, 6, radius),  // Hexagon
-    () => Bodies.polygon(x, y, 8, radius)   // Octagon
-  ];
-
-  const shape = geometryTypes[Math.floor(Math.random() * geometryTypes.length)]();
+  // ONLY use Bodies.circle
+  const shape = Bodies.circle(x, y, radius);
   
   shape.restitution = 0.6;
   shape.friction = 0.1;
