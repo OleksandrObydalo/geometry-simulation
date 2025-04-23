@@ -139,6 +139,45 @@ function resetWorld() {
   Composite.add(world, mouseConstraint);
 }
 
+// Color and opacity management
+const opacityLevels = [1, 0.8, 0.6, 0.4, 0.2];
+let currentOpacityIndex = 0;
+
+const colorPalettes = [
+  ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
+  ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#A8E6CF', '#FF8ED4', '#FAD390'],
+  ['#6A11CB', '#2575FC', '#FF868E', '#8EC5FC', '#E0C3FC', '#B9FFFC', '#FFD3A5', '#FD6585']
+];
+let currentPaletteIndex = 0;
+
+// Function to update body colors
+function updateBodyColors() {
+  const colors = colorPalettes[currentPaletteIndex];
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach((body, index) => {
+    body.render.fillStyle = colors[index % colors.length];
+  });
+  
+  // Cycle to next palette
+  currentPaletteIndex = (currentPaletteIndex + 1) % colorPalettes.length;
+}
+
+// Function to update body opacity
+function updateBodyOpacity() {
+  const opacity = opacityLevels[currentOpacityIndex];
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach(body => {
+    body.render.opacity = opacity;
+  });
+  
+  // Cycle to next opacity level
+  currentOpacityIndex = (currentOpacityIndex + 1) % opacityLevels.length;
+}
+
 // Create static bodies
 const staticBodies = [
   Bodies.rectangle(window.innerWidth/2, window.innerHeight + 30, window.innerWidth, 60, { 
@@ -277,6 +316,10 @@ Events.on(mouseConstraint, 'mousemove', function(event) {
 
 renderer.setMouse(mouseConstraint);
 Composite.add(world, mouseConstraint);
+
+// Add event listeners for color and opacity buttons
+document.getElementById('changeColorBtn').addEventListener('click', updateBodyColors);
+document.getElementById('changeTransparencyBtn').addEventListener('click', updateBodyOpacity);
 
 // Add event listener for space key to restart the simulation
 window.addEventListener('keydown', (event) => {

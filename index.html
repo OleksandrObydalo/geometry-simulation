@@ -17,9 +17,32 @@
       width: 100vw;
       height: 100vh;
     }
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .control-btn {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid #333;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .control-btn:hover {
+      background: rgba(255,255,255,0.9);
+    }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <button class="control-btn" id="changeColorBtn">Change Colors</button>
+    <button class="control-btn" id="changeTransparencyBtn">Change Opacity</button>
+  </div>
   <script type="module" src="main.js"></script>
 </body>
 </html>
