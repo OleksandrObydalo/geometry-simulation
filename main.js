@@ -30,6 +30,9 @@ world.grid = Grid.create({
 // Configure engine
 engine.gravity.y = 1;
 
+let currentTool = null;
+let deletionMode = false;
+
 // Create custom renderer with optimization flags
 const renderer = new CanvasRenderer(document.body, engine, Matter, {
   width: window.innerWidth,
@@ -40,6 +43,78 @@ const renderer = new CanvasRenderer(document.body, engine, Matter, {
   batchDrawing: true,
   use3D: true
 });
+
+// Modify the createGeometricBody function to include individual color and opacity controls
+function createGeometricBody(x, y) {
+  const radius = Math.random() * 60 + 30; 
+  const colors = [
+    '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
+    '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
+  ];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  
+  const geometryTypes = [
+    () => Bodies.circle(x, y, radius),
+    () => Bodies.polygon(x, y, 3, radius),  // Triangle
+    () => Bodies.polygon(x, y, 4, radius),  // Square
+    () => Bodies.polygon(x, y, 5, radius),  // Pentagon
+    () => Bodies.polygon(x, y, 6, radius),  // Hexagon
+    () => Bodies.polygon(x, y, 8, radius)   // Octagon
+  ];
+
+  const shape = geometryTypes[Math.floor(Math.random() * geometryTypes.length)]();
+  
+  shape.restitution = 0.6;
+  shape.friction = 0.1;
+  shape.density = 0.001;
+  shape.render.fillStyle = color;
+  shape.render.opacity = 1;
+  
+  // Add custom properties for individual control
+  shape.customColor = color;
+  shape.customOpacity = 1;
+  
+  return shape;
+}
+
+// Modify the color and opacity update functions to work individually
+const colorPalettes = [
+  ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
+  ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#A8E6CF', '#FF8ED4', '#FAD390'],
+  ['#6A11CB', '#2575FC', '#FF868E', '#8EC5FC', '#E0C3FC', '#B9FFFC', '#FFD3A5', '#FD6585']
+];
+let currentPaletteIndex = 0;
+
+const opacityLevels = [1, 0.8, 0.6, 0.4, 0.2];
+let currentOpacityIndex = 0;
+
+function updateBodyColors() {
+  const colors = colorPalettes[currentPaletteIndex];
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach((body, index) => {
+    body.customColor = colors[index % colors.length];
+    body.render.fillStyle = body.customColor;
+  });
+  
+  // Cycle to next palette
+  currentPaletteIndex = (currentPaletteIndex + 1) % colorPalettes.length;
+}
+
+function updateBodyOpacity() {
+  const opacity = opacityLevels[currentOpacityIndex];
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach(body => {
+    body.customOpacity = opacity;
+    body.render.opacity = opacity;
+  });
+  
+  // Cycle to next opacity level
+  currentOpacityIndex = (currentOpacityIndex + 1) % opacityLevels.length;
+}
 
 // Add a function to reset the world
 function resetWorld() {
@@ -78,57 +153,16 @@ function resetWorld() {
     })
   ];
 
-  const colors = [
-    '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
-    '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
-  ];
-
-  // Recreate dynamic bodies
   const dynamicBodies = [];
   for (let i = 0; i < 15; i++) {
-    const radius = Math.random() * 60 + 30; 
-    const color = colors[Math.floor(Math.random() * colors.length)];
+    const body = createGeometricBody(
+      Math.random() * window.innerWidth,
+      Math.random() * window.innerHeight
+    );
     
-    const shapeType = Math.random();
-    let shape;
-    
-    if (shapeType < 0.3) {
-      // Circle
-      shape = Bodies.circle(
-        Math.random() * window.innerWidth,
-        Math.random() * window.innerHeight,
-        radius,
-        {
-          restitution: 0.6,
-          friction: 0.1,
-          density: 0.001,
-          render: {
-            fillStyle: color,
-            opacity: 1
-          }
-        }
-      );
-    } else {
-      // Polygon with 3 to 8 sides
-      const sides = Math.floor(Math.random() * 6) + 3;
-      shape = Bodies.polygon(
-        Math.random() * window.innerWidth,
-        Math.random() * window.innerHeight,
-        sides,
-        radius,
-        {
-          restitution: 0.6,
-          friction: 0.1,
-          density: 0.001,
-          render: {
-            fillStyle: color,
-            opacity: 1
-          }
-        }
-      );
-    }
-    
-    dynamicBodies.push(shape);
+    // Ensure body is not invisible
+    body.render.opacity = Math.max(body.render.opacity, 0.1);
+    dynamicBodies.push(body);
   }
 
   // Add bodies back to the world
@@ -137,45 +171,6 @@ function resetWorld() {
   // Reset mouse constraint
   Composite.remove(world, mouseConstraint);
   Composite.add(world, mouseConstraint);
-}
-
-// Color and opacity management
-const opacityLevels = [1, 0.8, 0.6, 0.4, 0.2];
-let currentOpacityIndex = 0;
-
-const colorPalettes = [
-  ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
-  ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#A8E6CF', '#FF8ED4', '#FAD390'],
-  ['#6A11CB', '#2575FC', '#FF868E', '#8EC5FC', '#E0C3FC', '#B9FFFC', '#FFD3A5', '#FD6585']
-];
-let currentPaletteIndex = 0;
-
-// Function to update body colors
-function updateBodyColors() {
-  const colors = colorPalettes[currentPaletteIndex];
-  const dynamicBodies = Composite.allBodies(world)
-    .filter(body => !body.isStatic);
-  
-  dynamicBodies.forEach((body, index) => {
-    body.render.fillStyle = colors[index % colors.length];
-  });
-  
-  // Cycle to next palette
-  currentPaletteIndex = (currentPaletteIndex + 1) % colorPalettes.length;
-}
-
-// Function to update body opacity
-function updateBodyOpacity() {
-  const opacity = opacityLevels[currentOpacityIndex];
-  const dynamicBodies = Composite.allBodies(world)
-    .filter(body => !body.isStatic);
-  
-  dynamicBodies.forEach(body => {
-    body.render.opacity = opacity;
-  });
-  
-  // Cycle to next opacity level
-  currentOpacityIndex = (currentOpacityIndex + 1) % opacityLevels.length;
 }
 
 // Create static bodies
@@ -210,58 +205,16 @@ const staticBodies = [
   })
 ];
 
-const colors = [
-  '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
-  '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
-];
-
-// Create fewer, larger dynamic bodies
 const dynamicBodies = [];
 for (let i = 0; i < 15; i++) {
-  const radius = Math.random() * 60 + 30; 
-  const color = colors[Math.floor(Math.random() * colors.length)];
+  const body = createGeometricBody(
+    Math.random() * window.innerWidth,
+    Math.random() * window.innerHeight
+  );
   
-  // Decide which shape to create with more variety
-  const shapeType = Math.random();
-  let shape;
-  
-  if (shapeType < 0.3) {
-    // Circle
-    shape = Bodies.circle(
-      Math.random() * window.innerWidth,
-      Math.random() * window.innerHeight,
-      radius,
-      {
-        restitution: 0.6,
-        friction: 0.1,
-        density: 0.001,
-        render: {
-          fillStyle: color,
-          opacity: 1 // Ensure full opacity
-        }
-      }
-    );
-  } else {
-    // Polygon with 3 to 8 sides
-    const sides = Math.floor(Math.random() * 6) + 3; // 3 to 8 sides
-    shape = Bodies.polygon(
-      Math.random() * window.innerWidth,
-      Math.random() * window.innerHeight,
-      sides,
-      radius,
-      {
-        restitution: 0.6,
-        friction: 0.1,
-        density: 0.001,
-        render: {
-          fillStyle: color,
-          opacity: 1 // Ensure full opacity
-        }
-      }
-    );
-  }
-  
-  dynamicBodies.push(shape);
+  // Ensure body is not invisible
+  body.render.opacity = Math.max(body.render.opacity, 0.1);
+  dynamicBodies.push(body);
 }
 
 // Add bodies in batches
@@ -284,19 +237,27 @@ const mouseConstraint = MouseConstraint.create(engine, {
   }
 });
 
-// Add spring effect to mouse movement
+// Modify the existing mouse event listeners
 Events.on(mouseConstraint, 'mousedown', function(event) {
   const mousePosition = event.mouse.position;
-  const bodies = Matter.Query.point(dynamicBodies, mousePosition);
   
-  if (bodies.length > 0) {
-    const clickedBody = bodies[0];
-    // Apply a slight impulse on click for feedback
-    Matter.Body.applyForce(clickedBody, mousePosition, {
-      x: (Math.random() - 0.5) * 0.001,
-      y: (Math.random() - 0.5) * 0.001
-    });
+  // Only perform actions if a specific tool is selected
+  if (currentTool === 'add') {
+    // Add a new figure at the mouse position
+    const newBody = createGeometricBody(mousePosition.x, mousePosition.y);
+    Composite.add(world, newBody);
+  } else if (currentTool === 'delete') {
+    // Find and remove bodies under the mouse pointer
+    const bodiesUnderMouse = Matter.Query.point(
+      Composite.allBodies(world).filter(body => !body.isStatic), 
+      mousePosition
+    );
+    
+    if (bodiesUnderMouse.length > 0) {
+      Composite.remove(world, bodiesUnderMouse[0]);
+    }
   }
+  // No else clause for neutral mode - this prevents any default action
 });
 
 Events.on(mouseConstraint, 'mousemove', function(event) {
@@ -317,9 +278,62 @@ Events.on(mouseConstraint, 'mousemove', function(event) {
 renderer.setMouse(mouseConstraint);
 Composite.add(world, mouseConstraint);
 
+// Modify the button event listeners to include a "neutral" state
+document.getElementById('addBtn').addEventListener('click', () => {
+  currentTool = 'add';
+  document.getElementById('addBtn').classList.add('active-tool');
+  document.getElementById('deleteBtn').classList.remove('active-tool');
+});
+
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  currentTool = 'delete';
+  document.getElementById('deleteBtn').classList.add('active-tool');
+  document.getElementById('addBtn').classList.remove('active-tool');
+});
+
+// Add a new button for neutral mode
+const neutralBtn = document.createElement('button');
+neutralBtn.textContent = 'Neutral Mode';
+neutralBtn.classList.add('tool-btn');
+neutralBtn.id = 'neutralBtn';
+
+// Add the neutral button to the toolbox
+document.getElementById('toolbox').appendChild(neutralBtn);
+
+// Add event listener for neutral mode
+neutralBtn.addEventListener('click', () => {
+  currentTool = null;
+  document.getElementById('addBtn').classList.remove('active-tool');
+  document.getElementById('deleteBtn').classList.remove('active-tool');
+  neutralBtn.classList.add('active-tool');
+});
+
 // Add event listeners for color and opacity buttons
 document.getElementById('changeColorBtn').addEventListener('click', updateBodyColors);
 document.getElementById('changeTransparencyBtn').addEventListener('click', updateBodyOpacity);
+
+// Add event listeners for individual color and opacity controls
+document.getElementById('colorPicker').addEventListener('input', (event) => {
+  const color = event.target.value;
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach(body => {
+    body.customColor = color;
+    body.render.fillStyle = color;
+  });
+});
+
+document.getElementById('opacitySlider').addEventListener('input', (event) => {
+  const opacity = parseFloat(event.target.value);
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  dynamicBodies.forEach(body => {
+    body.customOpacity = opacity;
+    body.render.opacity = opacity;
+  });
+});
 
 // Add event listener for space key to restart the simulation
 window.addEventListener('keydown', (event) => {

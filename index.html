@@ -36,12 +36,57 @@
     .control-btn:hover {
       background: rgba(255,255,255,0.9);
     }
+    #colorControls {
+      position: fixed;
+      top: 50px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+    .color-input {
+      width: 100px;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    #toolbox {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .tool-btn {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid #333;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .tool-btn:hover {
+      background: rgba(255,255,255,0.9);
+    }
+    .active-tool {
+      background: rgba(52, 152, 219, 0.7);
+      color: white;
+    }
   </style>
 </head>
 <body>
   <div id="controls">
     <button class="control-btn" id="changeColorBtn">Change Colors</button>
     <button class="control-btn" id="changeTransparencyBtn">Change Opacity</button>
+  </div>
+  <div id="colorControls">
+    <input type="color" id="colorPicker" class="color-input" value="#3498db">
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="1">
+  </div>
+  <div id="toolbox">
+    <button class="tool-btn" id="addBtn">Add Figure</button>
+    <button class="tool-btn" id="deleteBtn">Delete Figure</button>
   </div>
   <script type="module" src="main.js"></script>
 </body>
