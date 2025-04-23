@@ -41,6 +41,104 @@ const renderer = new CanvasRenderer(document.body, engine, Matter, {
   use3D: true
 });
 
+// Add a function to reset the world
+function resetWorld() {
+  // Clear existing bodies
+  Composite.clear(world, false);
+  
+  // Recreate static bodies
+  const staticBodies = [
+    Bodies.rectangle(window.innerWidth/2, window.innerHeight + 30, window.innerWidth, 60, { 
+      isStatic: true,
+      friction: 0.3,
+      render: {
+        fillStyle: '#2c3e50'
+      }
+    }),
+    Bodies.rectangle(-30, window.innerHeight/2, 60, window.innerHeight, { 
+      isStatic: true,
+      friction: 0.3,
+      render: {
+        fillStyle: '#2c3e50'
+      }
+    }),
+    Bodies.rectangle(window.innerWidth + 30, window.innerHeight/2, 60, window.innerHeight, { 
+      isStatic: true,
+      friction: 0.3,
+      render: {
+        fillStyle: '#2c3e50'
+      }
+    }),
+    Bodies.rectangle(window.innerWidth/2, -30, window.innerWidth, 60, { 
+      isStatic: true,
+      friction: 0.3,
+      render: {
+        fillStyle: '#2c3e50'
+      }
+    })
+  ];
+
+  const colors = [
+    '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
+    '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
+  ];
+
+  // Recreate dynamic bodies
+  const dynamicBodies = [];
+  for (let i = 0; i < 15; i++) {
+    const radius = Math.random() * 60 + 30; 
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    
+    const shapeType = Math.random();
+    let shape;
+    
+    if (shapeType < 0.3) {
+      // Circle
+      shape = Bodies.circle(
+        Math.random() * window.innerWidth,
+        Math.random() * window.innerHeight,
+        radius,
+        {
+          restitution: 0.6,
+          friction: 0.1,
+          density: 0.001,
+          render: {
+            fillStyle: color,
+            opacity: 1
+          }
+        }
+      );
+    } else {
+      // Polygon with 3 to 8 sides
+      const sides = Math.floor(Math.random() * 6) + 3;
+      shape = Bodies.polygon(
+        Math.random() * window.innerWidth,
+        Math.random() * window.innerHeight,
+        sides,
+        radius,
+        {
+          restitution: 0.6,
+          friction: 0.1,
+          density: 0.001,
+          render: {
+            fillStyle: color,
+            opacity: 1
+          }
+        }
+      );
+    }
+    
+    dynamicBodies.push(shape);
+  }
+
+  // Add bodies back to the world
+  Composite.add(world, [...staticBodies, ...dynamicBodies]);
+  
+  // Reset mouse constraint
+  Composite.remove(world, mouseConstraint);
+  Composite.add(world, mouseConstraint);
+}
+
 // Create static bodies
 const staticBodies = [
   Bodies.rectangle(window.innerWidth/2, window.innerHeight + 30, window.innerWidth, 60, { 
@@ -84,34 +182,45 @@ for (let i = 0; i < 15; i++) {
   const radius = Math.random() * 60 + 30; 
   const color = colors[Math.floor(Math.random() * colors.length)];
   
-  const shape = Math.random() > 0.5 
-    ? Bodies.circle(
-        Math.random() * window.innerWidth,
-        Math.random() * window.innerHeight,
-        radius,
-        {
-          restitution: 0.6,
-          friction: 0.1,
-          density: 0.001,
-          render: {
-            fillStyle: color
-          }
+  // Decide which shape to create with more variety
+  const shapeType = Math.random();
+  let shape;
+  
+  if (shapeType < 0.3) {
+    // Circle
+    shape = Bodies.circle(
+      Math.random() * window.innerWidth,
+      Math.random() * window.innerHeight,
+      radius,
+      {
+        restitution: 0.6,
+        friction: 0.1,
+        density: 0.001,
+        render: {
+          fillStyle: color,
+          opacity: 1 // Ensure full opacity
         }
-      )
-    : Bodies.polygon(
-        Math.random() * window.innerWidth,
-        Math.random() * window.innerHeight,
-        Math.floor(Math.random() * 3) + 3, 
-        radius,
-        {
-          restitution: 0.6,
-          friction: 0.1,
-          density: 0.001,
-          render: {
-            fillStyle: color
-          }
+      }
+    );
+  } else {
+    // Polygon with 3 to 8 sides
+    const sides = Math.floor(Math.random() * 6) + 3; // 3 to 8 sides
+    shape = Bodies.polygon(
+      Math.random() * window.innerWidth,
+      Math.random() * window.innerHeight,
+      sides,
+      radius,
+      {
+        restitution: 0.6,
+        friction: 0.1,
+        density: 0.001,
+        render: {
+          fillStyle: color,
+          opacity: 1 // Ensure full opacity
         }
-      );
+      }
+    );
+  }
   
   dynamicBodies.push(shape);
 }
@@ -119,7 +228,7 @@ for (let i = 0; i < 15; i++) {
 // Add bodies in batches
 Composite.add(world, [...staticBodies, ...dynamicBodies]);
 
-// Add mouse control with spring properties
+// Create mouse control with spring properties
 const mouse = Mouse.create(renderer.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
   mouse: mouse,
@@ -168,6 +277,14 @@ Events.on(mouseConstraint, 'mousemove', function(event) {
 
 renderer.setMouse(mouseConstraint);
 Composite.add(world, mouseConstraint);
+
+// Add event listener for space key to restart the simulation
+window.addEventListener('keydown', (event) => {
+  if (event.code === 'Space') {
+    event.preventDefault(); // Prevent space from scrolling
+    resetWorld();
+  }
+});
 
 // Throttled resize handler
 let resizeTimeout;
