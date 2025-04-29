@@ -73,6 +73,26 @@
       background: rgba(52, 152, 219, 0.7);
       color: white;
     }
+    #geometryControls {
+      position: fixed;
+      top: 90px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .geometry-input {
+      width: 100px;
+      margin-bottom: 5px;
+    }
+    #geometryTypeSelect {
+      width: 120px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -83,6 +103,17 @@
   <div id="colorControls">
     <input type="color" id="colorPicker" class="color-input" value="#3498db">
     <input type="range" id="opacitySlider" min="0" max="1" step="0.1" value="1">
+  </div>
+  <div id="geometryControls">
+    <select id="geometryTypeSelect">
+      <option value="circle">Circle</option>
+      <option value="ellipse">Ellipse</option>
+      <option value="polygon">Polygon</option>
+    </select>
+    <input type="number" id="radiusInput" class="geometry-input" placeholder="Radius" min="10" max="200" value="50">
+    <input type="number" id="widthInput" class="geometry-input" placeholder="Width" min="10" max="200" value="50" style="display:none;">
+    <input type="number" id="heightInput" class="geometry-input" placeholder="Height" min="10" max="200" value="50" style="display:none;">
+    <input type="number" id="polygonSidesInput" class="geometry-input" placeholder="Polygon Sides" min="3" max="12" value="6" style="display:none;">
   </div>
   <div id="toolbox">
     <button class="tool-btn" id="addBtn">Add Figure</button>

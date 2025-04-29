@@ -44,23 +44,43 @@ const renderer = new CanvasRenderer(document.body, engine, Matter, {
   use3D: true
 });
 
-// Modify the createGeometricBody function to ONLY create circles
-function createGeometricBody(x, y) {
-  const radius = Math.random() * 60 + 30; 
+// Modify createGeometricBody function to support multiple shape types
+function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, height = 50, sides = 6) {
   const colors = [
     '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
     '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
   ];
   const color = colors[Math.floor(Math.random() * colors.length)];
   
-  // ONLY use Bodies.circle
-  const shape = Bodies.circle(x, y, radius);
+  let shape;
+  switch(type) {
+    case 'circle':
+      shape = Bodies.circle(x, y, radius);
+      break;
+    case 'ellipse':
+      shape = Bodies.rectangle(x, y, width, height, {
+        chamfer: { radius: 10 },  // Rounded corners for softer look
+        render: {
+          fillStyle: color,
+          opacity: 1  // Ensure full opacity
+        }
+      });
+      break;
+    case 'polygon':
+      shape = Bodies.polygon(x, y, sides, radius, {
+        render: {
+          fillStyle: color,
+          opacity: 1  // Ensure full opacity
+        }
+      });
+      break;
+  }
   
   shape.restitution = 0.6;
   shape.friction = 0.1;
   shape.density = 0.001;
   shape.render.fillStyle = color;
-  shape.render.opacity = 1;
+  shape.render.opacity = 1;  // Explicitly set opacity to 1
   
   // Add custom properties for individual control
   shape.customColor = color;
@@ -233,13 +253,54 @@ const mouseConstraint = MouseConstraint.create(engine, {
 Events.on(mouseConstraint, 'mousedown', function(event) {
   const mousePosition = event.mouse.position;
   
-  // Only perform actions if a specific tool is selected
   if (currentTool === 'add') {
-    // Add a new figure at the mouse position
-    const newBody = createGeometricBody(mousePosition.x, mousePosition.y);
+    const geometryType = document.getElementById('geometryTypeSelect').value;
+    const customColor = document.getElementById('colorPicker').value;
+    
+    let newBody;
+    switch(geometryType) {
+      case 'circle':
+        const radius = parseFloat(document.getElementById('radiusInput').value);
+        newBody = createGeometricBody(
+          mousePosition.x, 
+          mousePosition.y, 
+          'circle', 
+          radius
+        );
+        break;
+      case 'ellipse':
+        const width = parseFloat(document.getElementById('widthInput').value);
+        const height = parseFloat(document.getElementById('heightInput').value);
+        newBody = createGeometricBody(
+          mousePosition.x, 
+          mousePosition.y, 
+          'ellipse', 
+          50, 
+          width, 
+          height
+        );
+        break;
+      case 'polygon':
+        const polygonRadius = parseFloat(document.getElementById('radiusInput').value);
+        const sides = parseFloat(document.getElementById('polygonSidesInput').value);
+        newBody = createGeometricBody(
+          mousePosition.x, 
+          mousePosition.y, 
+          'polygon', 
+          polygonRadius, 
+          50, 
+          50, 
+          sides
+        );
+        break;
+    }
+    
+    // Override the body's color with the selected color
+    newBody.render.fillStyle = customColor;
+    newBody.customColor = customColor;
+    
     Composite.add(world, newBody);
   } else if (currentTool === 'delete') {
-    // Find and remove bodies under the mouse pointer
     const bodiesUnderMouse = Matter.Query.point(
       Composite.allBodies(world).filter(body => !body.isStatic), 
       mousePosition
@@ -249,7 +310,6 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
       Composite.remove(world, bodiesUnderMouse[0]);
     }
   }
-  // No else clause for neutral mode - this prevents any default action
 });
 
 Events.on(mouseConstraint, 'mousemove', function(event) {
@@ -325,6 +385,36 @@ document.getElementById('opacitySlider').addEventListener('input', (event) => {
     body.customOpacity = opacity;
     body.render.opacity = opacity;
   });
+});
+
+// Modify event listener for geometry type to show/hide appropriate inputs
+document.getElementById('geometryTypeSelect').addEventListener('change', (event) => {
+  const type = event.target.value;
+  const radiusInput = document.getElementById('radiusInput');
+  const widthInput = document.getElementById('widthInput');
+  const heightInput = document.getElementById('heightInput');
+  const polygonSidesInput = document.getElementById('polygonSidesInput');
+  
+  switch(type) {
+    case 'circle':
+      radiusInput.style.display = 'block';
+      widthInput.style.display = 'none';
+      heightInput.style.display = 'none';
+      polygonSidesInput.style.display = 'none';
+      break;
+    case 'ellipse':
+      radiusInput.style.display = 'none';
+      widthInput.style.display = 'block';
+      heightInput.style.display = 'block';
+      polygonSidesInput.style.display = 'none';
+      break;
+    case 'polygon':
+      radiusInput.style.display = 'block';
+      widthInput.style.display = 'none';
+      heightInput.style.display = 'block';
+      polygonSidesInput.style.display = 'block';
+      break;
+  }
 });
 
 // Add event listener for space key to restart the simulation
