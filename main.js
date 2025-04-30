@@ -45,12 +45,14 @@ const renderer = new CanvasRenderer(document.body, engine, Matter, {
 });
 
 // Modify createGeometricBody function to support multiple shape types
-function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, height = 50, sides = 6) {
+function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, height = 50, sides = 6, futureColor = null) {
   const colors = [
     '#e74c3c', '#3498db', '#2ecc71', '#f1c40f',
     '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
   ];
-  const color = colors[Math.floor(Math.random() * colors.length)];
+  
+  // Use futureColor if provided, otherwise use a random color
+  const color = futureColor || colors[Math.floor(Math.random() * colors.length)];
   
   let shape;
   switch(type) {
@@ -59,10 +61,10 @@ function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, hei
       break;
     case 'ellipse':
       shape = Bodies.rectangle(x, y, width, height, {
-        chamfer: { radius: 10 },  // Rounded corners for softer look
+        chamfer: { radius: 10 },
         render: {
           fillStyle: color,
-          opacity: 1  // Ensure full opacity
+          opacity: 1
         }
       });
       break;
@@ -70,7 +72,7 @@ function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, hei
       shape = Bodies.polygon(x, y, sides, radius, {
         render: {
           fillStyle: color,
-          opacity: 1  // Ensure full opacity
+          opacity: 1
         }
       });
       break;
@@ -80,11 +82,12 @@ function createGeometricBody(x, y, type = 'circle', radius = 50, width = 50, hei
   shape.friction = 0.1;
   shape.density = 0.001;
   shape.render.fillStyle = color;
-  shape.render.opacity = 1;  // Explicitly set opacity to 1
+  shape.render.opacity = 1;
   
-  // Add custom properties for individual control
+  // Custom properties for individual control
   shape.customColor = color;
   shape.customOpacity = 1;
+  shape.futureColor = futureColor; // Store the future color
   
   return shape;
 }
@@ -255,7 +258,7 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
   
   if (currentTool === 'add') {
     const geometryType = document.getElementById('geometryTypeSelect').value;
-    const customColor = document.getElementById('colorPicker').value;
+    const futureColor = document.getElementById('colorPicker').value;
     
     let newBody;
     switch(geometryType) {
@@ -265,7 +268,11 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
           mousePosition.x, 
           mousePosition.y, 
           'circle', 
-          radius
+          radius,
+          50,  // default width
+          50,  // default height
+          6,   // default sides
+          futureColor  // pass the future color
         );
         break;
       case 'ellipse':
@@ -277,7 +284,9 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
           'ellipse', 
           50, 
           width, 
-          height
+          height,
+          6,
+          futureColor  // pass the future color
         );
         break;
       case 'polygon':
@@ -290,14 +299,11 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
           polygonRadius, 
           50, 
           50, 
-          sides
+          sides,
+          futureColor  // pass the future color
         );
         break;
     }
-    
-    // Override the body's color with the selected color
-    newBody.render.fillStyle = customColor;
-    newBody.customColor = customColor;
     
     Composite.add(world, newBody);
   } else if (currentTool === 'delete') {
@@ -364,16 +370,10 @@ neutralBtn.addEventListener('click', () => {
 document.getElementById('changeColorBtn').addEventListener('click', updateBodyColors);
 document.getElementById('changeTransparencyBtn').addEventListener('click', updateBodyOpacity);
 
-// Add event listeners for individual color and opacity controls
+// Modify existing color picker event listener
 document.getElementById('colorPicker').addEventListener('input', (event) => {
-  const color = event.target.value;
-  const dynamicBodies = Composite.allBodies(world)
-    .filter(body => !body.isStatic);
-  
-  dynamicBodies.forEach(body => {
-    body.customColor = color;
-    body.render.fillStyle = color;
-  });
+  // This listener now just updates the color picker's value
+  // No changes to existing figures
 });
 
 document.getElementById('opacitySlider').addEventListener('input', (event) => {
