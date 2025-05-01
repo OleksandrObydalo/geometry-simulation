@@ -655,6 +655,63 @@ neutralBtn.addEventListener('click', () => {
   neutralBtn.classList.add('active-tool');
 });
 
+// Add a new input for changing radius of selected circles
+const radiusChangeInput = document.createElement('input');
+radiusChangeInput.type = 'number';
+radiusChangeInput.id = 'selectedCircleRadiusInput';
+radiusChangeInput.classList.add('geometry-input');
+radiusChangeInput.placeholder = 'Selected Circles Radius';
+radiusChangeInput.min = '10';
+radiusChangeInput.max = '200';
+
+// Add the radius change input to the geometry controls
+const geometryControls = document.getElementById('geometryControls');
+geometryControls.appendChild(radiusChangeInput);
+
+// Event listener for radius change input
+radiusChangeInput.addEventListener('input', (event) => {
+  const newRadius = parseFloat(event.target.value);
+  
+  // Filter only circle bodies from selected figures
+  const selectedCircles = selectedFigures.filter(body => 
+    body.circleRadius !== undefined
+  );
+  
+  selectedCircles.forEach(circle => {
+    // Remove the old body from the world
+    Composite.remove(world, circle);
+    
+    // Create a new circle body with the updated radius
+    const newCircle = Bodies.circle(
+      circle.position.x, 
+      circle.position.y, 
+      newRadius, 
+      {
+        restitution: circle.restitution,
+        friction: circle.friction,
+        density: circle.density,
+        render: {
+          fillStyle: circle.render.fillStyle,
+          opacity: circle.render.opacity
+        }
+      }
+    );
+    
+    // Copy over any custom properties
+    newCircle.customColor = circle.customColor;
+    newCircle.customOpacity = circle.customOpacity;
+    
+    // Add the new circle to the world
+    Composite.add(world, newCircle);
+    
+    // If this circle was selected, add it to selected figures
+    const index = selectedFigures.indexOf(circle);
+    if (index !== -1) {
+      selectedFigures[index] = newCircle;
+    }
+  });
+});
+
 // Create runner with fixed time step
 const runner = Runner.create({
   isFixed: true,
