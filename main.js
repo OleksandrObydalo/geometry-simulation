@@ -422,6 +422,14 @@ document.getElementById('geometryTypeSelect').addEventListener('change', (event)
   }
 });
 
+// Modify the existing gravityInput event listener
+document.getElementById('gravityInput').addEventListener('input', (event) => {
+  const gravityValue = parseFloat(event.target.value);
+  
+  // Set the world's gravity
+  engine.gravity.y = gravityValue;
+});
+
 // Add event listener for space key to restart the simulation
 window.addEventListener('keydown', (event) => {
   if (event.code === 'Space') {
