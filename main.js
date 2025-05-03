@@ -256,7 +256,52 @@ const mouseConstraint = MouseConstraint.create(engine, {
 Events.on(mouseConstraint, 'mousedown', function(event) {
   const mousePosition = event.mouse.position;
   
-  if (currentTool === 'add') {
+  // If in select mode, add figures to selection
+  if (selectMode) {
+    const bodiesUnderMouse = Matter.Query.point(
+      Composite.allBodies(world).filter(body => !body.isStatic), 
+      mousePosition
+    );
+    
+    if (bodiesUnderMouse.length > 0) {
+      const bodyToSelect = bodiesUnderMouse[0];
+      
+      // Toggle selection (add or remove from selected figures)
+      const index = selectedFigures.indexOf(bodyToSelect);
+      if (index === -1) {
+        selectedFigures.push(bodyToSelect);
+        // Optional: Visual indication of selection
+        bodyToSelect.render.strokeStyle = 'rgba(52, 152, 219, 0.7)';
+        bodyToSelect.render.lineWidth = 3;
+      } else {
+        selectedFigures.splice(index, 1);
+        // Remove visual indication
+        bodyToSelect.render.strokeStyle = 'transparent';
+        bodyToSelect.render.lineWidth = 0;
+      }
+    }
+  } 
+  // If in unselect mode, remove figures from selection
+  else if (unselectMode) {
+    const bodiesUnderMouse = Matter.Query.point(
+      Composite.allBodies(world).filter(body => !body.isStatic), 
+      mousePosition
+    );
+    
+    if (bodiesUnderMouse.length > 0) {
+      const bodyToUnselect = bodiesUnderMouse[0];
+      
+      const index = selectedFigures.indexOf(bodyToUnselect);
+      if (index !== -1) {
+        selectedFigures.splice(index, 1);
+        // Remove visual indication
+        bodyToUnselect.render.strokeStyle = 'transparent';
+        bodyToUnselect.render.lineWidth = 0;
+      }
+    }
+  }
+  // Check if currently in 'add' tool mode before creating a figure
+  else if (currentTool === 'add') {
     const geometryType = document.getElementById('geometryTypeSelect').value;
     const futureColor = document.getElementById('colorPicker').value;
     
@@ -305,8 +350,13 @@ Events.on(mouseConstraint, 'mousedown', function(event) {
         break;
     }
     
+    // Add the new body to the world
     Composite.add(world, newBody);
-  } else if (currentTool === 'delete') {
+    
+    // Keep the add button active
+    document.getElementById('addBtn').classList.add('active-tool');
+  } 
+  else if (currentTool === 'delete') {
     const bodiesUnderMouse = Matter.Query.point(
       Composite.allBodies(world).filter(body => !body.isStatic), 
       mousePosition
@@ -341,12 +391,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
   currentTool = 'add';
   document.getElementById('addBtn').classList.add('active-tool');
   document.getElementById('deleteBtn').classList.remove('active-tool');
-});
-
-document.getElementById('deleteBtn').addEventListener('click', () => {
-  currentTool = 'delete';
-  document.getElementById('deleteBtn').classList.add('active-tool');
-  document.getElementById('addBtn').classList.remove('active-tool');
+  document.getElementById('neutralBtn').classList.remove('active-tool');
 });
 
 // Add a new button for neutral mode
@@ -361,8 +406,23 @@ document.getElementById('toolbox').appendChild(neutralBtn);
 // Add event listener for neutral mode
 neutralBtn.addEventListener('click', () => {
   currentTool = null;
+  selectMode = false;
+  unselectMode = false;
+  
+  // Clear selected figures and remove selection visual indicators
+  selectedFigures.forEach(body => {
+    body.render.strokeStyle = 'transparent';
+    body.render.lineWidth = 0;
+  });
+  
+  // Clear the selected figures array
+  selectedFigures = [];
+  
+  // Update button states
   document.getElementById('addBtn').classList.remove('active-tool');
   document.getElementById('deleteBtn').classList.remove('active-tool');
+  document.getElementById('selectFigureBtn').classList.remove('active-tool');
+  document.getElementById('unselectFigureBtn').classList.remove('active-tool');
   neutralBtn.classList.add('active-tool');
 });
 
@@ -476,6 +536,8 @@ window.addEventListener('resize', () => {
 
 // Add a new array to track selected figures
 let selectedFigures = [];
+let selectMode = false;
+let unselectMode = false;
 
 // Add buttons for selecting and unselecting figures
 const selectFigureBtn = document.createElement('button');
@@ -492,10 +554,6 @@ unselectFigureBtn.id = 'unselectFigureBtn';
 const toolbox = document.getElementById('toolbox');
 toolbox.appendChild(selectFigureBtn);
 toolbox.appendChild(unselectFigureBtn);
-
-// Add flags for selection modes
-let selectMode = false;
-let unselectMode = false;
 
 // Event listener for select figure button
 selectFigureBtn.addEventListener('click', () => {
@@ -527,140 +585,6 @@ unselectFigureBtn.addEventListener('click', () => {
   // Add active state to unselect button
   unselectFigureBtn.classList.add('active-tool');
   selectFigureBtn.classList.remove('active-tool');
-});
-
-// Modify the mousedown event to handle figure selection
-Events.on(mouseConstraint, 'mousedown', function(event) {
-  const mousePosition = event.mouse.position;
-  
-  // If in select mode, add figures to selection
-  if (selectMode) {
-    const bodiesUnderMouse = Matter.Query.point(
-      Composite.allBodies(world).filter(body => !body.isStatic), 
-      mousePosition
-    );
-    
-    if (bodiesUnderMouse.length > 0) {
-      const bodyToSelect = bodiesUnderMouse[0];
-      
-      // Toggle selection (add or remove from selected figures)
-      const index = selectedFigures.indexOf(bodyToSelect);
-      if (index === -1) {
-        selectedFigures.push(bodyToSelect);
-        // Optional: Visual indication of selection
-        bodyToSelect.render.strokeStyle = 'rgba(52, 152, 219, 0.7)';
-        bodyToSelect.render.lineWidth = 3;
-      } else {
-        selectedFigures.splice(index, 1);
-        // Remove visual indication
-        bodyToSelect.render.strokeStyle = 'transparent';
-        bodyToSelect.render.lineWidth = 0;
-      }
-    }
-  } 
-  // If in unselect mode, remove figures from selection
-  else if (unselectMode) {
-    const bodiesUnderMouse = Matter.Query.point(
-      Composite.allBodies(world).filter(body => !body.isStatic), 
-      mousePosition
-    );
-    
-    if (bodiesUnderMouse.length > 0) {
-      const bodyToUnselect = bodiesUnderMouse[0];
-      
-      const index = selectedFigures.indexOf(bodyToUnselect);
-      if (index !== -1) {
-        selectedFigures.splice(index, 1);
-        // Remove visual indication
-        bodyToUnselect.render.strokeStyle = 'transparent';
-        bodyToUnselect.render.lineWidth = 0;
-      }
-    }
-  }
-  // Existing code for adding and deleting remains the same
-  else if (currentTool === 'add') {
-    const geometryType = document.getElementById('geometryTypeSelect').value;
-    const futureColor = document.getElementById('colorPicker').value;
-    
-    let newBody;
-    switch(geometryType) {
-      case 'circle':
-        const radius = parseFloat(document.getElementById('radiusInput').value);
-        newBody = createGeometricBody(
-          mousePosition.x, 
-          mousePosition.y, 
-          'circle', 
-          radius,
-          50,  // default width
-          50,  // default height
-          6,   // default sides
-          futureColor  // pass the future color
-        );
-        break;
-      case 'ellipse':
-        const width = parseFloat(document.getElementById('widthInput').value);
-        const height = parseFloat(document.getElementById('heightInput').value);
-        newBody = createGeometricBody(
-          mousePosition.x, 
-          mousePosition.y, 
-          'ellipse', 
-          50, 
-          width, 
-          height,
-          6,
-          futureColor  // pass the future color
-        );
-        break;
-      case 'polygon':
-        const polygonRadius = parseFloat(document.getElementById('radiusInput').value);
-        const sides = parseFloat(document.getElementById('polygonSidesInput').value);
-        newBody = createGeometricBody(
-          mousePosition.x, 
-          mousePosition.y, 
-          'polygon', 
-          polygonRadius, 
-          50, 
-          50, 
-          sides,
-          futureColor  // pass the future color
-        );
-        break;
-    }
-    
-    Composite.add(world, newBody);
-  } else if (currentTool === 'delete') {
-    const bodiesUnderMouse = Matter.Query.point(
-      Composite.allBodies(world).filter(body => !body.isStatic), 
-      mousePosition
-    );
-    
-    if (bodiesUnderMouse.length > 0) {
-      Composite.remove(world, bodiesUnderMouse[0]);
-    }
-  }
-});
-
-// Modify the neutral mode event listener to clear selections
-neutralBtn.addEventListener('click', () => {
-  currentTool = null;
-  selectMode = false;
-  unselectMode = false;
-  
-  // Clear selected figures and remove selection visual indicators
-  selectedFigures.forEach(body => {
-    body.render.strokeStyle = 'transparent';
-    body.render.lineWidth = 0;
-  });
-  
-  // Clear the selected figures array
-  selectedFigures = [];
-  
-  // Update button states
-  document.getElementById('addBtn').classList.remove('active-tool');
-  document.getElementById('deleteBtn').classList.remove('active-tool');
-  document.getElementById('selectFigureBtn').classList.remove('active-tool');
-  document.getElementById('unselectFigureBtn').classList.remove('active-tool');
-  neutralBtn.classList.add('active-tool');
 });
 
 // Add a new input for changing radius of selected circles
