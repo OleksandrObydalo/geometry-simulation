@@ -498,6 +498,30 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
+// Add a "Delete All" button
+const deleteAllBtn = document.createElement('button');
+deleteAllBtn.textContent = 'Delete All';
+deleteAllBtn.classList.add('tool-btn');
+deleteAllBtn.id = 'deleteAllBtn';
+
+// Add the delete all button to the toolbox
+document.getElementById('toolbox').appendChild(deleteAllBtn);
+
+// Event listener for delete all button
+deleteAllBtn.addEventListener('click', () => {
+  // Remove all non-static bodies from the world
+  const dynamicBodies = Composite.allBodies(world)
+    .filter(body => !body.isStatic);
+  
+  // Clear selected figures
+  selectedFigures = [];
+  
+  // Remove each dynamic body
+  dynamicBodies.forEach(body => {
+    Composite.remove(world, body);
+  });
+});
+
 // Throttled resize handler
 let resizeTimeout;
 window.addEventListener('resize', () => {
